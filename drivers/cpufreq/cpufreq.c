@@ -29,8 +29,12 @@
 #include <linux/completion.h>
 #include <linux/mutex.h>
 #include <linux/syscore_ops.h>
+#include <linux/cpumask.h>
 
 #include <trace/events/power.h>
+
+/* Safe boot speed */
+#define SafeBootSpeed 1008000
 
 /**
  * The "cpufreq driver" - the arch- or hardware-dependent low
@@ -100,6 +104,30 @@ static void unlock_policy_rwsem_write(int cpu)
 	up_write(&per_cpu(cpu_policy_rwsem, policy_cpu));
 }
 
+static void cpu_up_work(struct work_struct *work)
+{
+	int cpu;
+	
+	for_each_cpu_not(cpu, cpu_online_mask) {
+		if (cpu == 0)
+			continue;
+		cpu_up(cpu);
+	}
+}
+
+static void cpu_down_work(struct work_struct *work)
+{
+	int cpu;
+	
+	for_each_online_cpu(cpu) {
+		if (cpu == 0)
+			continue;
+		cpu_down(cpu);
+	}
+}
+
+static DECLARE_WORK(cpufreq_up_work, cpu_up_work);
+static DECLARE_WORK(cpufreq_down_work, cpu_down_work);
 
 /* internal prototypes */
 static int __cpufreq_governor(struct cpufreq_policy *policy,
@@ -941,6 +969,9 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 		pr_debug("initialization failed\n");
 		goto err_unlock_policy;
 	}
+
+	/* Set max speed at boot to 1.008Ghz since is the safest speed to boot */
+	if (policy->max > SafeBootSpeed) policy->max = SafeBootSpeed;
 	policy->user_policy.min = policy->min;
 	policy->user_policy.max = policy->max;
 
@@ -1664,6 +1695,7 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
 
 			/* start new governor */
 			data->governor = policy->governor;
+			schedule_work_on(0, &cpufreq_up_work);
 			if (__cpufreq_governor(data, CPUFREQ_GOV_START)) {
 				/* new governor failed, so re-start old one */
 				pr_debug("starting governor %s failed\n",
