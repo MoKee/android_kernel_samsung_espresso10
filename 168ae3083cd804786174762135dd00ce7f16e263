@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a26ad4f_7365c0df",
+        "filename": "arch/arm/mach-omap2/opp4xxx_data.c",
+        "patchSetId": 1
+      },
+      "lineNbr": 308,
+      "author": {
+        "id": 305
+      },
+      "writtenOn": "2014-01-20T16:43:03Z",
+      "side": 1,
+      "message": "Should be fine after you clear this whitespace...:)",
+      "revId": "168ae3083cd804786174762135dd00ce7f16e263",
+      "serverId": "83d63960-fecf-4fd1-a7f6-e01518638a62",
+      "unresolved": false
+    }
+  ]
+}
