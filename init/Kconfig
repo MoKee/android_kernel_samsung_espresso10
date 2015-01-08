@@ -930,7 +930,6 @@ config GCC_48_FIXES
 
     If unsure, say N.
 
-
 config SYSCTL
 	bool
 
